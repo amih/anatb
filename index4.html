@@ -1,0 +1,1099 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 4.0//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252">
+<meta name="author" content="SitePoint">
+<link rel="stylesheet" href="GIS.css">
+<link rel="stylesheet" href="tilda.css">
+<title>ICON SEE forecast from  22/06/2021 00 UTC</title>
+<STYLE TYPE="text/css">
+#mapid { 
+   position: absolute;
+   top:    77px;
+   /*left:   300px;*/
+   width:  1000px;
+   height: 702px;
+}
+img.leaflet-image-layer {
+   opacity: 50%;
+}
+#slider {
+   position: absolute;
+   display: table-cell;
+   bottom: 30px;
+   width: 600px;
+   margin-left: 200px;
+}
+#radarSliderObs{
+   width: 50px;
+   height: 100%;
+   background-image: linear-gradient(90deg, transparent 90%, #e21d1d 10%);
+   background-size: 10px 10px;
+}
+</STYLE>
+<link rel="stylesheet" href="./jqui/jquery-ui.min.css">
+<script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+<script src="jqui/jquery-ui.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+<script language="JavaScript">
+mymap = undefined;
+amiLayer = undefined;
+currentMap = 'slp';
+currentDomain = 'ilplus';
+currentModel = 'ICON';
+currentLegend = 'ec_legend'
+$('#legendSrc, #arrowUp, #arrowDown').addClass('disappear')
+$('#noUpscale, #upscale1, #upscale2').addClass('disappear')
+currentUp = 'up';
+currentDn = 'down';
+currentRegion = 4;
+mapFlag = 0;
+currentTimeButton1 = "minus24";
+currentTimeButton2 = "minus12";
+currentTimeButton3 = "minus1";
+currentTimeButton4 = "plus1";
+currentTimeButton5 = "plus12";
+currentTimeButton6 = "plus24";
+
+setMaps = (map) => {
+   currentMap    = map;
+   currentUp     = 'up';
+   currentDn     = 'down';
+   currentLat    = 1;
+   currentLevel  = 0;
+   currentRegion = 4;
+   mapFlag=0;
+
+   currentTimeButton1 = "minus24";
+   currentTimeButton2 = "minus12";
+   currentTimeButton3 = "minus1";
+   currentTimeButton4 = "plus1";
+   currentTimeButton5 = "plus12";
+   currentTimeButton6 = "plus24";
+   $('#legendSrc').addClass('disappear');
+   $('#arrowUp').addClass('disappear');
+   $('#arrowDown').addClass('disappear');
+   $('#noUpscale, #upscale1, #upscale2').addClass('disappear')
+
+   if (currentMap == 'wxclouds'){
+      $('#legendSrc').removeClass();
+      $('#legendSrc').addClass('clouds');
+      currentLegend = 'wx_legend';
+   }
+   if (currentMap == 'ecclouds'){
+      $('#legendSrc').removeClass();
+      $('#legendSrc').addClass('clouds');
+      currentLegend = 'ec_legend';
+   }
+  
+   if (currentMap == "precip3hr" || currentMap.slice(0,4)=='ENS3'){ 
+      currentTimeButton3 = "minus3";
+      currentTimeButton4 = "plus3";
+      currentStep = Math.round(currentStep/3)*3;
+   }
+   if (currentMap == "precip6hr" || currentMap.slice(0,4)=='ENS6'){
+      currentTimeButton3 = "minus6";
+      currentTimeButton4 = "plus6";
+      currentStep = Math.round(currentStep/6)*6;
+   }
+   if (currentMap == "precip12hr"){
+      currentTimeButton1 = "minus48";
+      currentTimeButton2 = "minus24";
+      currentTimeButton3 = "minus12";
+      currentTimeButton4 = "plus12";
+      currentTimeButton5 = "plus24";
+      currentTimeButton6 = "plus48";
+      currentStep = Math.round(currentStep/12)*12;
+   }
+
+   if (currentMap == "CS"){
+      mapFlag=1;
+      if (currentModel=="IFS"){
+         setModel("ICON");
+      }
+      setDomains("il");
+      currentLegend = 'lat1';
+      $('#arrowDown').addClass('unable');
+      $('#arrowUp').addClass('unable');
+      $('#arrowUp, #arrowDown').removeClass('disappear');
+      $('#img [name=ih_img]').removeClass('ENSimg');
+      $('#legendSrc').removeClass();
+      $('#legendSrc').addClass('crossSection');
+      $('#domain div[data-domain="ilplus"], #domain div[data-domain="emed"]').addClass('disabled');
+      $('#domain div[data-domain="see"], #domain div[data-domain="balkans"]').addClass('disabled');
+      $('#model div[data-model="IFS"]').addClass('disabled');
+   }
+
+   if (currentMap != "BL1" && currentMap != "BL2" && currentMap != "BL3"){
+      $('#img [name=ih_img]').removeClass('locationBL');
+      $('#img [name=ih_img]').addClass('mainClass');
+      $('.init').removeClass('initBL');
+      $('.timeaxis1').removeClass('animationBL');
+      $('.timeButtons').removeClass('timeButtonsBL');
+   }
+   if (currentMap == "BL1" || currentMap == "BL2" || currentMap == "BL3"){
+      mapFlag=1;
+      if (currentModel=="IFS"){
+         setModel("ICON");
+      }
+      setDomains("il");
+      $('#arrowDown').addClass('unable');
+      $('#arrowUp').addClass('unable');
+      $('#arrowUp , #arrowDown').removeClass('disappear');
+      $('#img [name=ih_img]').removeClass('mainClass');
+      $('#img [name=ih_img]').addClass('locationBL');
+      $('.init').addClass('initBL');
+      $('.timeaxis1').addClass('animationBL');
+      $('.timeButtons').addClass('timeButtonsBL');
+      $('#domain div[data-domain="ilplus"], #domain div[data-domain="emed"]').addClass('disabled');
+      $('#domain div[data-domain="see"], #domain div[data-domain="balkans"]').addClass('disabled');
+      $('#model div[data-model="IFS"]').addClass('disabled');
+   }
+
+   if (currentMap=="zoomSnow" || currentMap=="zoomGraupel" || currentMap=="zoomSnowDepth"){
+      mapFlag=1;
+      setModel("ICON");
+      setDomains("il");
+      currentLegend = 'North';
+      $('#legendSrc').removeClass();
+      $('#legendSrc').addClass('crossSection');
+      $('#arrowDown').addClass('unable');
+      $('#arrowUp').addClass('unable');
+      $('#arrowUp , #arrowDown').removeClass('disappear');
+      $('#domain div[data-domain="ilplus"], #domain div[data-domain="emed"]').addClass('disabled');
+      $('#domain div[data-domain="see"], #domain div[data-domain="balkans"]').addClass('disabled');
+      $('#model div[data-model="IFS"], #model div[data-model="COSMO"]').addClass('disabled');
+   }
+
+   if (currentMap!="CS" && currentMap!="BL1" && currentMap!="BL2" && currentMap!="BL3" && currentMap!="zoomSnow" && currentMap!="zoomGraupel" && currentMap!="zoomSnowDepth"){
+      mapFlag=0;
+      $('#mainImg').removeClass('ENSimg').addClass('mainClass');
+      $('#model div').removeClass('disabled');
+      $('#domain div').removeClass('disabled');
+      $('#legendSrc').removeClass('crossSection');
+   }
+
+   // ENSEMBLE maps
+   if (currentMap.slice(0,3)=='ENS'){
+      mapFlag = 4,
+      currentPath = '/~baharad/ENS',
+      $('#arrowUp , #arrowDown').removeClass('disappear');
+      $('#legendSrc').removeClass('disappear');
+      $('#legendSrc').removeClass('clouds');
+      $('#arrowDown').addClass('unable');
+      $('#arrowUp').addClass('unable');
+      $('#mainImg').removeClass('mainClass').addClass('ENSimg');
+      $('.init').addClass('initBL');
+      $('.timeaxis1').addClass('animationBL');
+      $('.timeButtons').addClass('timeButtonsBL');
+      $('#domain div[data-domain="ilplus"], #domain div[data-domain="emed"]').addClass('disabled');
+      $('#domain div[data-domain="see"], #domain div[data-domain="balkans"]').addClass('disabled');
+      $('#model div[data-model="ICON"]').addClass('disabled');
+
+      // set initial ENS maps+threshold and corresponding legend
+      if (currentStep==0 && currentMap.slice(0,4)=='ENS3'){
+         currentStep=3;
+      }
+      if (currentStep==0 && currentMap.slice(0,4)=='ENS6'){
+         currentStep=6;
+      }
+      if (currentMap=='ENSsnowDepth' || currentMap=='ENSsnowDepthUp'){
+         currentThreshold='01';
+         $('#legendSrc').removeClass().addClass('ENSsnow');
+         $('#noUpscale, #upscale1').removeClass('disappear');
+         $('#upscale2').addClass('disappear');
+      }
+      if (currentMap=='ENS3tmax'){
+         currentThreshold='20';
+         $('#legendSrc').removeClass().addClass('ENStmax');
+      }
+      if (currentMap=='ENS3tmin'){
+         currentThreshold='0';
+         $('#legendSrc').removeClass().addClass('ENStmin');
+      }
+      if (currentMap=='ENS3clcl'){
+         currentThreshold='3';
+         $('#legendSrc').removeClass().addClass('ENStmin');
+      }
+      if (currentMap=='ENS3gust' || currentMap=='ENS3vmax'){
+         currentThreshold='10';
+         $('#legendSrc').removeClass().addClass('ENSrh');
+      }
+      if (currentMap=='ENS3rhmax'){
+         currentThreshold='95';
+         $('#legendSrc').removeClass().addClass('ENSrh');
+      }
+      if (currentMap=='ENS3tp' || currentMap=='ENS3tpUp'){
+         currentThreshold='05';
+         $('#legendSrc').removeClass().addClass('ENSrh');
+         $('#noUpscale, #upscale1').removeClass('disappear');
+         $('#upscale2').addClass('disappear');
+      }
+      if (currentMap=='ENS6tp' || currentMap=='ENS6tpUp' || currentMap=='ENS6tpUp2'){
+         currentThreshold='05';
+         $('#legendSrc').removeClass().addClass('ENStp6');
+         $('#noUpscale, #upscale1, #upscale2').removeClass('disappear')
+      }
+
+      if (currentMap=="ENSsnowDepth" || currentMap=="ENS3tp" || currentMap=="ENS6tp" || currentMap=="ENS6tpUp2"){
+         setModel('COSMO');
+      }
+
+      if (currentModel=="ICON"){
+         setModel('COSMO');
+      }
+
+      setDomains('il');
+      $('#domain div[data-domain="ilplus"], #domain div[data-domain="emed"]').addClass('disabled');
+      $('#domain div[data-domain="see"], #domain div[data-domain="balkans"]').addClass('disabled');
+  }
+
+   // the next if is needed in order to keep the disabled COSMO domains when clicking on new maps
+   if(currentModel=='COSMO'){
+      $('#domain div[data-domain="emed"]').addClass('disabled');
+      $('#domain div[data-domain="see"]').addClass('disabled');
+      $('#domain div[data-domain="balkans"]').addClass('disabled');
+   }
+   if(currentModel=='RADAR'){
+      // TODO: manage hide or shor of slider // $( "#slider" ).slider();
+      // $('#domain div[data-domain="emed"]').addClass('disabled');
+      // $('#domain div[data-domain="see"]').addClass('disabled');
+      // $('#domain div[data-domain="balkans"]').addClass('disabled');
+   }
+   stopAnimation();
+   updateImage();
+}
+
+setDomains = (domain) => {
+   currentDomain = domain;
+   $('#domain div').removeClass()
+   $('#model div').removeClass('disabled');
+   if(currentDomain=='emed' || currentDomain=='see' || currentDomain=='balkans'){
+      $('#model div[data-model="COSMO"]').addClass('disabled');
+   }
+
+   if (currentMap.slice(0,3)=='ENS'){
+      $('#model div[data-model="ICON"]').addClass('disabled');
+      $('#domain div[data-domain="ilplus"], #domain div[data-domain="emed"]').addClass('disabled');
+      $('#domain div[data-domain="see"], #domain div[data-domain="balkans"]').addClass('disabled');
+   }
+
+   // cross section / model levels - only available for ICON/COSMO and obly at il region
+   if (mapFlag==1){
+      $('#model div[data-model="IFS"]').addClass('disabled');
+      $('#domain div[data-domain="ilplus"], #domain div[data-domain="emed"]').addClass('disabled');
+      $('#domain div[data-domain="see"], #domain div[data-domain="balkans"]').addClass('disabled');
+   }
+
+   $('#domain div[data-domain="' + currentDomain + '"]').addClass('theChosenOne');
+   stopAnimation();
+   updateImage();
+}
+
+setModel = (model) => {
+   currentModel = model;
+   $('#model div').removeClass();
+   $('#domain div').removeClass('disabled');
+   if(currentModel=='COSMO'){
+      $('#domain div[data-domain="emed"]').addClass('disabled');
+      $('#domain div[data-domain="see"]').addClass('disabled');
+      $('#domain div[data-domain="balkans"]').addClass('disabled');
+   }
+   if (currentMap.slice(0,3)=='ENS'){
+      $('#model div[data-model="ICON"]').addClass('disabled');
+      $('#domain div').addClass('disabled');
+      $('#domain div[data-domain="il"]').removeClass('disabled').addClass('theChosenOne');
+   }
+
+   // cross section / model levels - only available for ICON/COSMO and obly at il region
+   if (mapFlag==1){
+      $('#model div[data-model="IFS"]').addClass('disabled');
+      $('#domain div[data-domain="ilplus"], #domain div[data-domain="emed"]').addClass('disabled');
+      $('#domain div[data-domain="see"], #domain div[data-domain="balkans"]').addClass('disabled');
+   }
+
+   $('#maps div').removeClass('disabled');
+   if(currentModel=='COSMO' || currentModel=='ICON'){
+      $('#map19, #map20').addClass('disabled');
+   }
+
+   $('#model div[data-model="' + currentModel + '"]').addClass('theChosenOne');
+   stopAnimation();
+   updateImage();
+}
+
+currentStep = 0;
+
+setStep = (step) => {
+   stopAnimation();
+   if ((currentMap=="precip3hr" || currentMap.slice(0,4)=='ENS3') & step==1){ step=3; }
+   if ((currentMap=="precip3hr" || currentMap.slice(0,4)=='ENS3') && step==-1){ step=-3; }
+   if ((currentMap=="precip6hr" || currentMap.slice(0,4)=='ENS6') && step==1){ step=6; }
+   if ((currentMap=="precip6hr" || currentMap.slice(0,4)=='ENS6') && step==-1){ step=-6; }
+   if (currentMap=="precip12hr" && step==1){ step=12; }
+   if (currentMap=="precip12hr" && step==-1){ step=-12; }
+   if (currentMap=="precip12hr" && step==12){ step=24; }
+   if (currentMap=="precip12hr" && step==-12){ step=24; }
+   if (currentMap=="precip12hr" && step==24){ step=48; }
+   if (currentMap=="precip12hr" && step==-24){ step=48; }
+
+   currentStep=currentStep+step;
+   if (currentStep>90){ currentStep=90; }
+   if (currentStep<0){ currentStep=0; }
+   if (currentMap.slice(0,4)=='ENS3' & currentStep<3){ currentStep=3; }
+   if (currentMap.slice(0,4)=='ENS6' & currentStep<6){ currentStep=6; }
+
+   // check if need to disable some of the special "init" buttons
+   $('.init').removeClass('disabled');
+   if(currentStep+60>90){ $('.init[data-init=60]').addClass('disabled'); }
+   if(currentStep+48>90){ $('.init[data-init=48]').addClass('disabled'); }
+   if(currentStep+36>90){ $('.init[data-init=36]').addClass('disabled'); }
+   if(currentStep+24>90){ $('.init[data-init=24]').addClass('disabled'); }
+   if(currentStep+12>90){ $('.init[data-init=12]').addClass('disabled'); }
+   if(currentMap=="radar"){ step=10; }
+   updateImage();
+}
+AnimationStep = () => {
+   if(currentMap!="radar" && currentMap!="precip3hr" && currentMap!="precip6hr" && currentMap!="precip12hr"){currentStep++;}
+   if(currentMap=="precip3hr"){ currentStep=currentStep+3;}
+   if(currentMap=="precip6hr"){ currentStep=currentStep+6;}
+   if(currentMap=="precip12hr"){ currentStep=currentStep+12;}
+   if(currentMap!="radar" && currentStep>90){ currentStep=0; }
+   if(currentMap=="radar"){ currentStep+=10; if(currentStep>100){ currentStep=0; } } // TODO: find out the max step for radar
+   updateImage()
+}
+currentAnimation=null;
+playAnimation = () => { currentAnimation = setInterval(AnimationStep,500); }
+stopAnimation = () => { clearInterval(currentAnimation); }
+upscl2 = () =>{
+   if (currentMap.slice(0,6)=="ENS6tp"){
+      currentMap = "ENS6tpUp2";
+   }
+   stopAnimation();
+   updateImage();
+}
+
+upscl1 = () =>{
+   if (currentMap.slice(0,7)=="ENSsnow"){ currentMap = "ENSsnowDepthUp"; }
+   if (currentMap.slice(0,6)=="ENS3tp"){ currentMap = "ENS3tpUp"; }
+   if (currentMap.slice(0,6)=="ENS6tp"){ currentMap = "ENS6tpUp"; }
+   stopAnimation();
+   updateImage();
+}
+
+noUpscl = () =>{
+   if (currentMap.slice(0,7)=="ENSsnow"){ currentMap = "ENSsnowDepth"; }
+   if (currentMap.slice(0,6)=="ENS3tp"){ currentMap = "ENS3tp"; }
+   if (currentMap.slice(0,6)=="ENS6tp"){ currentMap = "ENS6tp"; }
+   stopAnimation();
+   updateImage();
+}
+
+setUp = (up) =>{
+   if (currentMap=="CS"){
+      currentLat=currentLat+up;
+      if (currentLat>10) { currentLat=10 };
+      if (currentLat<1)  { currentLat=1  };
+      currentLegend =  'lat' + currentLat;
+   }
+   if (currentMap=="BL1" || currentMap=="BL2" ||currentMap=="BL3"){
+      currentLevel=currentLevel+up;
+      if (currentLevel>36) { currentLevel=36 };
+      if (currentLevel<0) { currentLevel=0 };
+   }
+   if (currentMap=="zoomSnow" || currentMap=="zoomGraupel" || currentMap=="zoomSnowDepth"){
+      //dom4=north, dom5=center dom6=south
+      currentRegion=currentRegion-up;
+      if (currentRegion>6) {currentRegion=6};
+      if (currentRegion<4) {currentRegion=4};
+   }
+
+   // ENSemble Maps
+   if (mapFlag==4) {
+      if (up==1){
+         if (currentMap=='ENSsnowDepth' || currentMap=='ENSsnowDepthUp'){
+            nextThreshold={
+               '01'  : '05',
+               '05'  : '1',
+               '1'   : '2',
+               '2'   : '3',
+               '3'   : '5',
+               '5'   : '7',
+               '7'   : '10',
+               '10'  : '15',
+               '15'  : '20',
+               '20'  : '30',
+               '30'  : '50',
+               '50'  : '75',
+               '75'  : '100',
+               '100' : '200',
+               '200' : '200'
+            }
+         }
+         if (currentMap=='ENS3tmax'){
+            nextThreshold={
+               '20' : '30',
+               '30' : '35',
+               '35' : '35'
+            }
+         }
+         if (currentMap=='ENS3tmin'){
+            nextThreshold={
+               '0' : '2',
+               '2' : '5',
+               '5' : '5'
+            }
+        }
+        if (currentMap=='ENS3clcl'){
+           nextThreshold={
+              '3' : '5',
+              '5' : '7',
+              '7' : '7'
+           }
+        }
+
+         if (currentMap=='ENS3gust' || currentMap=='ENS3vmax'){
+            nextThreshold={
+               '10' : '15',
+               '15' : '20',
+               '20' : '20'
+            }
+         }
+         if (currentMap=='ENS3rhmax'){
+            nextThreshold={
+               '95' : '97',
+               '97' : '99',
+               '99' : '99'
+            }
+         }
+         if (currentMap=='ENS3tp' || currentMap=='ENS3tpUp'){
+            nextThreshold={
+               '05' : '2',
+               '2'  : '5',
+               '5'  : '5'
+            }
+         }
+         if (currentMap=='ENS6tp' || currentMap=='ENS6tpUp' || currentMap=='ENS6tpUp2'){
+            nextThreshold={
+               '05' : '2',
+               '2'  : '5',
+               '5'  : '10',
+               '10' : '20',
+               '20' : '30',
+               '30' : '50',
+               '50' : '50'
+            }
+         }
+      }
+
+      if (up==-1){
+        if (currentMap=='ENSsnowDepth' || currentMap=='ENSsnowDepthUp'){
+           nextThreshold={
+              '01'  : '01',
+              '05'  : '01',
+              '1'   : '05',
+              '2'   : '1',
+              '3'   : '2',
+              '5'   : '3',
+              '7'   : '5',
+              '10'  : '7',
+              '15'  : '10',
+              '20'  : '15',
+              '30'  : '20',
+              '50'  : '30',
+              '75'  : '50',
+              '100' : '75',
+              '200' : '100'
+           }
+        }
+        if (currentMap=='ENS3tmax'){
+           nextThreshold={
+              '20' : '20',
+              '30' : '20',
+              '35' : '30'
+           }
+        }
+        if (currentMap=='ENS3tmin'){
+           nextThreshold={
+              '0' : '0',
+              '2' : '0',
+              '5' : '2'
+           }
+       }
+       if (currentMap=='ENS3clcl'){
+          nextThreshold={
+             '3' : '3',
+             '5' : '3',
+             '7' : '5'
+          }
+       }
+        if (currentMap=='ENS3gust' || currentMap=='ENS3vmax'){
+           nextThreshold={
+              '10' : '10',
+              '15' : '10',
+              '20' : '15'
+            }
+         }
+        if (currentMap=='ENS3rhmax'){
+           nextThreshold={
+              '95' : '95',
+              '97' : '95',
+              '99' : '97'
+            }
+         }
+         if (currentMap=='ENS3tp' || currentMap=='ENS3tpUp'){
+            nextThreshold={
+               '05' : '05',
+               '2'  : '05',
+               '5'  : '2'
+            }
+         }
+         if (currentMap=='ENS6tp' || currentMap=='ENS6tpUp' || currentMap=='ENS6tpUp2'){
+            nextThreshold={
+               '05' : '05',
+               '2'  : '05',
+               '5'  : '2',
+               '10' : '5',
+               '20' : '10',
+               '30' : '20',
+               '50' : '30'
+            }
+         }
+      }
+      currentThreshold = nextThreshold[currentThreshold]
+   }
+   updateImage()
+}
+// TODO: https://jqueryui.com/slider/#rangemin
+updateImage = () => {
+   myImage = new Image();
+   hh=00;
+   h=hh+currentStep
+   m=06-1;
+   fdate = (new Date(Date.UTC(2021, m, 22, h))).toISOString().replaceAll('-','').replaceAll('T','').split(':')[0]
+   if (mapFlag==0){ 
+      myImage.src=  'GIS_' + currentModel + '/' +  'GIS_' + currentModel + '_' + currentMap + '_' + currentDomain + "_2021062200_" + fdate + '_' + currentStep + '.png';
+   }
+   // Cross Section
+   if (currentMap == "CS"){
+      myImage.src=  '/~baharad/CS/' + currentModel + '/' + '2021' + '/' + '06' + '/' + '22' +'/' + '00' + '/bl_cs_dom_1_lat_' + currentLat +'_step_' + currentStep + '.png';
+   }
+   // Model levels
+   if (currentMap == "BL1"){
+      myImage.src=  '/~baharad/CS/' + currentModel + '/' + '2021' + '/' + '06' + '/' + '22' +'/' + '00' + '/bl_var_1_dom_1_lev_' + currentLevel +'_step_' + currentStep + '.png';
+   }
+   if (currentMap == "BL2"){
+      myImage.src=  '/~baharad/CS/' + currentModel + '/' + '2021' + '/' + '06' + '/' + '22' +'/' + '00' + '/bl_var_3_dom_1_lev_' + currentLevel +'_step_' + currentStep + '.png';
+   }
+   if (currentMap == "BL3"){
+      myImage.src=  '/~baharad/CS/' + currentModel + '/' + '2021' + '/' + '06' + '/' + '22' +'/' + '00' + '/bl_var_2_dom_1_lev_' + currentLevel +'_step_' + currentStep + '.png';
+   }
+   // IL: Sub-regions
+   if (currentMap=="zoomSnow" || currentMap=="zoomGraupel" || currentMap=="zoomSnowDepth"){
+      if (currentRegion==4) {currentLegend="North"};
+      if (currentRegion==5) {currentLegend="Center"};
+      if (currentRegion==6) {currentLegend="South"};
+      if (currentStep==0){ myImage.src = '/~baharad/site_png/empty_step_0.png' }
+   }
+   if (currentMap == "zoomSnow" && currentStep!=0){
+      myImage.src=  '/~baharad/CS/' + '2021' + '/' + '06' + '/' + '22' +'/' + '00' + '/var_3_dom_' + currentRegion + '_range_1_step_' + currentStep + '.png';
+   }
+   if (currentMap == "zoomGraupel" && currentStep!=0){
+      myImage.src=  '/~baharad/CS/' + '2021' + '/' + '06' + '/' + '22' +'/' + '00' + '/var_4_dom_' + currentRegion + '_range_1_step_' + currentStep + '.png';
+   }
+   if (currentMap == "zoomSnowDepth" && currentStep!=0){
+      myImage.src=  '/~baharad/CS/' + '2021' + '/' + '06' + '/' + '22' +'/' + '00' + '/var_5_dom_' + currentRegion + '_range_1_step_' + currentStep + '.png';
+   }
+   // ENSEMBLE MAPS
+   if (mapFlag==4){
+      myImage.src = '/~baharad/ENS/' + currentModel + '/' + '2021' + '/' + '06' + '/' + '22' +'/' + '00' + '/' + ENSmaps[currentMap] + '_il_prob_' + currentThreshold + ENSunits[currentMap] + '_s' + currentStep + '.1.png';
+      currentLegend = ENSlegend[currentMap] + '_' + currentThreshold;
+      if (currentMap=='ENSsnowDepth' || currentMap=="ENS6tp" || currentMap=="ENS6tpUp2" || currentMap=="ENS3tp"){
+         $('#model div[data-model="IFS"]').addClass('disabled');
+      }
+   }
+   if(currentMap == "radar"){
+      // currentStep is an integer, 90 hours, 10 minute steps. 540 files, first 10 files are past
+      fdate = (new Date(Date.UTC(2020, m, 01, hh) + 1000 * 60 * 10 * currentStep)).toISOString().replaceAll('-','').replaceAll('T','').replaceAll(':','').substr(0, 12);
+      myImage.src=  '/~baharad/radar/tp' + '2020' + '01' + '09' + '15' + '10' + '.png';
+   }
+   imageBounds = [[26,4.5], [52.5,45]];
+
+   //Image.src='slp_mercator.png'
+   // myImage.src='1.bmp'
+
+	center: [39.25, 24.75];
+	if(!!amiLayer){
+      amiLayer.setUrl(myImage.src);
+	}else{
+      amiLayer   = L.imageOverlay(myImage.src, imageBounds).addTo(mymap);
+	}
+
+   legend.src= currentLegend + '.png';
+   document.legend_img.src='/~baharad/legend/' + legend.src;
+
+   document.arrUp.src='/~baharad/icons/' + currentUp + '.png';
+   document.arrDn.src='/~baharad/icons/' + currentDn + '.png';
+  
+   timeButton1.src =  '/~baharad/icons/' + currentTimeButton1 + '.png';
+   timeButton2.src =  '/~baharad/icons/' + currentTimeButton2 + '.png';
+   timeButton3.src =  '/~baharad/icons/' + currentTimeButton3 + '.png';
+   timeButton4.src =  '/~baharad/icons/' + currentTimeButton4 + '.png';
+   timeButton5.src =  '/~baharad/icons/' + currentTimeButton5 + '.png';
+   timeButton6.src =  '/~baharad/icons/' + currentTimeButton6 + '.png';
+   document.timeButton1.src= timeButton1.src; 
+   document.timeButton2.src= timeButton2.src; 
+   document.timeButton3.src= timeButton3.src; 
+   document.timeButton4.src= timeButton4.src; 
+   document.timeButton5.src= timeButton5.src; 
+   document.timeButton6.src= timeButton6.src; 
+}
+$(() => { // initialization of the page (on-ready)
+   $( "#slider" ).slider({
+      max: 540,
+      value: 10,
+      slide: function( event, ui ) {
+        //$( "#amount" ).val( "$" + ui.value );
+        console.log('slider: ', ui.value);
+        currentStep = ui.value;
+        updateImage();
+      }
+   });
+   $( "#slider" ).append('<div id="radarSliderObs"></div>');
+   mymap=L.map('mapid').setView([32, 35], 8);
+   L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+     maxZoom: 18,
+     id: 'mapbox/satellite-v9',
+     tileSize: 512,
+     zoomOffset: -1,
+     accessToken: 'pk.eyJ1Ijoiem5hdm9uaXQiLCJhIjoiY2txMGxrNm5pMDYwMzJ2bzE4M3A0cTV6dyJ9.Q-BmyTAW0QsUIzgA0tn6-A'
+   }).addTo(mymap);
+   maps = {
+      'slp'            : 'slp',
+      'slpThickness'   : 'slp, 1000-500 Thickness',
+      'temp2wind10'    : '2m Temperature, 10m Wind',
+      'rh2wind10'      : '2m RH, 10m Wind',
+      'map850tempWind' : '850mb: Temp, Wind',
+      'map850rhWind'   : '850mb: RH, Wind',
+      'map700hgt'      : '700mb: Height, Temperature, Wind',
+      'map700omega'    : '700mb: Omega',
+      '500temp'        : '500mb: Temp, Height, Wind',
+      '500vort'        : '500mb: Vort, Height, Wind',
+      'map200'         : '200mb: Isotachs, Height',
+      'capeWater'      : 'Integrated Water Column, CAPE',
+      'clct'           : 'Total Cloud Cover',
+      'wxclouds'       : 'wx clouds',
+      'ecclouds'       : 'ec clouds',
+      'precip1hr'      : 'precipitation (1hr)',
+      'precip3hr'      : 'precipitation (3hr)',
+      'precip6hr'      : 'precipitation (6hr)',
+      'radar'          : 'Radar',
+      'zoomGraupel'    : 'Graupel - IL subregions',
+      'zoomSnow'       : 'Snow -  IL subregions',
+      'zoomSnowDepth'  : 'Snow Depth -  IL subregions',
+      'CS'             : 'Cross Sections - RH, T',
+      'BL'             : 'Model levels',
+      'BL1'            : '->Model levels - RH, Wind',
+      'BL2'            : '->Model levels - T, Wind',
+      'BL3'            : '->Model levels - QV, Wind',
+      'ENSEMBLE'       : 'ENSEMBLE (3h/6h)',
+      'ENSsnowDepth'   : '->ENS, snow depth',
+      'ENS3tmax'       : '->ENS, tmax',
+      'ENS3tmin'       : '->ENS, tmin',
+      'ENS3clcl'       : '->ENS, low cloud cover',
+      'ENS3gust'       : '->ENS, wind gust',
+      'ENS3rhmax'      : '->ENS, max RH',
+      'ENS3vmax'       : '->ENS, max wind',
+      'ENS3tp'         : '->ENS, total precip(3h)',
+      'ENS6tp'         : '->ENS, total precip (6h)',
+   }
+
+   keys = Object.keys(maps);
+   ele = '';
+   parent = '';
+   myparent = '';
+   for( i = 0; i < keys.length; i++ ){
+      if(myparent.length>0 && maps[keys[i]].substr(0,2)!='->'){
+         myparent = '';
+      }
+      if( i + 1 < keys.length && maps[keys[i]].substr(0,2) != '->' && maps[keys[i+1]].substr(0,2) == '->'){
+         parent = ' data-parent="' + keys[i] + '" ';
+      }
+      ele += '<div id="' + keys[i] + '" data-map="' + keys[i] + '"' + parent + myparent + '>' + maps[keys[i]].replace('->','') +'</div>';
+      if(parent.length>0){
+         myparent = parent.replace('parent','myparent');
+         parent = '';
+      }
+   }  
+
+   $('#maps').append(ele);
+   $('#maps div').click((event)=>{
+   if($(event.target).hasClass('disabled')){ return; }
+   parent = $(event.target).data('parent');
+   if(!!parent && parent.length>0){
+      // show or hide children, that is all.
+      $('#maps div[data-myparent=' + parent + ']').slideToggle();
+      }else{
+      setMaps($(event.target).data('map'));
+      $('#maps div').removeClass('theChosenOne');
+      $(event.target).addClass('theChosenOne');
+      }
+   });
+
+   ENSmaps = {
+      'ENSsnowDepth'   : 'hsnow',
+      'ENSsnowDepthUp' : 'hsnow_upscl',
+      'ENS3tmax'       : 'tmax3h',
+      'ENS3tmin'       : 'tmin3h',
+      'ENS3clcl'       : 'clcl3h',
+      'ENS3gust'       : 'vmax3h',
+      'ENS3rhmax'      : 'rhmax3h',
+      'ENS3vmax'       : 'vabsmax3h',
+      'ENS3tp'         : 'tp3',
+      'ENS3tpUp'       : 'tp3_upscl',
+      'ENS6tp'         : 'tp6',
+      'ENS6tpUp'       : 'tp6_upscl',
+      'ENS6tpUp2'      : 'tp6_upscl2'
+   }
+
+   ENSlegend = {
+      'ENSsnowDepth'   : 'ENShsnow',
+      'ENSsnowDepthUp' : 'ENShsnow',
+      'ENS3tmax'       : 'ENS3tmax',
+      'ENS3tmin'       : 'ENS3tmin',
+      'ENS3clcl'       : 'ENS3clcl',
+      'ENS3gust'       : 'ENS3wind',
+      'ENS3rhmax'      : 'ENS3rhmax',
+      'ENS3vmax'       : 'ENS3wind',
+      'ENS3tp'         : 'ENS3tp',
+      'ENS3tpUp'       : 'ENS3tp',
+      'ENS6tp'         : 'ENS6tp',
+      'ENS6tpUp'       : 'ENS6tp',
+      'ENS6tpUp2'      : 'ENS6tp'
+   }
+
+   ENSunits = {
+      'ENSsnowDepth'   : 'cm',
+      'ENSsnowDepthUp' : 'cm',
+      'ENS3tmax'       : 'C',
+      'ENS3tmin'       : 'C',
+      'ENS3clcl'       : '',
+      'ENS3gust'       : '',
+      'ENS3rhmax'      : '',
+      'ENS3vmax'       : '',
+      'ENS3tp'         : 'mm',
+      'ENS3tpUp'       : 'mm',
+      'ENS6tp'         : 'mm',
+      'ENS6tpUp'       : 'mm',
+      'ENS6tpUp2'      : 'mm'
+   }
+  
+   domain = {
+      'il':      'Israel',
+      'ilplus':  'IL+',    
+      'emed':    'East Med.',
+      'see':     'South East Europe',
+      'balkans': 'Balkans',
+   }
+   ele = '';
+   keys = Object.keys(domain)
+   for(i=0; i< keys.length; i++){
+      ele += '<div class="domainClass"  data-domain="' + keys[i] + '">' + domain[keys[i]] + '</div>';
+   }
+   $('#domain').append(ele);
+
+   $('#domain div').click((event)=>{
+   if( $(event.target).hasClass('disabled') ){ return; }
+      setDomains($(event.target).data('domain'));
+      $('#domain div').removeClass('theChosenOne');
+      $(event.target).addClass('theChosenOne');
+   });
+ 
+   $('#model div').click((event)=>{
+   if( $(event.target).hasClass('disabled') ){ return; }
+      setModel($(event.target).data('model'));
+      $('#model div').removeClass('theChosenOne');
+     $(event.target).addClass('theChosenOne');
+   });
+
+   flagInitOver = false;
+   $('.init').mouseover((event)=>{
+   if(flagInitOver){ return; }
+   if( $(event.target).hasClass('disabled') ){ return; }
+   let init = $(event.target).data('init');
+   if (mapFlag == 0){
+      splitWord='sitemaps';
+   }
+   if (mapFlag==1){
+       splitWord='CS';
+   }
+   if (mapFlag==4){
+       splitWord='ENS/'+currentModel;
+   }
+   if(currentMap=='radar'){splitWord='';}
+   let srcArr = document.ih_img.src.split(splitWord);
+   //  ["http://tildas:7776/~baharad/", "/2020/12/07/12/map16_see_2020120712_2020120712_0.png"]
+   // example, forecast: +4H, init-on-mouse-over: -36
+   // initDate: originalInitDate - init in hours
+   // step    : 36+4
+   // RULE: if init+step > 90 ==> disable the "mouseover"
+   //
+
+   srcSplit = srcArr[1].split('/');
+   initDateYYYY = srcSplit[1];
+   initDateMM   = srcSplit[2]-1;
+   initDateDD   = srcSplit[3];
+   initDateHH   = srcSplit[4];
+   initFullDate = initDateYYYY + initDateMM + initDateDD + initDateHH;
+
+   if (mapFlag==0){
+      srcMapName   = srcSplit[6].split('_');
+      GISprefix    = srcMapName[0];
+      mapModel     = srcMapName[1];
+      mapType      = srcMapName[2];
+      mapDom       = srcMapName[3];
+      mapInitDate  = srcMapName[4];
+      frcstDate    = srcMapName[5];
+      mapStep      = parseInt(srcMapName[6]);
+   }
+
+   if (mapFlag==1){
+     csStep  = srcSplit[5].split('step_')[1].split('.png')[0];
+     mapStep = parseInt(csStep);
+   }
+
+   if (mapFlag==4){
+     ensStep = srcSplit[5].split('_s')[1].split('.1.png')[0];
+     mapStep = parseInt(ensStep);
+   }
+
+   newStep      = mapStep + init;
+
+   newInitDateA = new Date(Date.UTC(initDateYYYY, initDateMM, initDateDD, initDateHH));
+   newInitDateB = new Date(newInitDateA.valueOf() - 1000*60*60*init);
+   newInitDate  = (newInitDateB).toISOString().replaceAll('-','').replaceAll('T','').split(':')[0];
+
+   newInitDateYYYY = newInitDate.substr(0,4);
+   newInitDateMM   = newInitDate.substr(4,2);
+   newInitDateDD   = newInitDate.substr(6,2);
+   newInitDateHH   = newInitDate.substr(8,2);
+
+   if (mapFlag==0){
+      newPath = newInitDateYYYY + '/' + newInitDateMM + '/' + newInitDateDD + '/' + newInitDateHH + '/' + mapModel;
+      newMap  = mapModel + '_' + mapType + '_' + mapDom + '_' + newInitDate + '_' + frcstDate + '_' + newStep + '.png';
+      document.ih_img.src = srcArr[0] + 'sitemaps/' + newPath + '/' + newMap;
+   }
+   if (currentMap == "CS"){
+      newPath = '/~baharad/CS/' + currentModel + '/' + newInitDateYYYY + '/' + newInitDateMM + '/' + newInitDateDD + '/' + newInitDateHH;
+      newMap  = 'bl_cs_dom_1_lat_' + currentLat + '_step_' + newStep + '.png';
+      document.ih_img.src = newPath + '/' + newMap;
+   }
+   if (currentMap == "BL1"){
+      newPath = '/~baharad/CS/' + currentModel + '/' + newInitDateYYYY + '/' + newInitDateMM + '/' + newInitDateDD + '/' + newInitDateHH;
+      newMap  = 'bl_var_1_dom_1_lev_' + currentLevel + '_step_' + newStep + '.png';
+      document.ih_img.src = newPath + '/' + newMap;
+   }
+   if (currentMap == "BL2"){
+      newPath = '/~baharad/CS/' + currentModel + '/' + newInitDateYYYY + '/' + newInitDateMM + '/' + newInitDateDD + '/' + newInitDateHH;
+      newMap  = 'bl_var_3_dom_1_lev_' + currentLevel + '_step_' + newStep + '.png';
+      document.ih_img.src = newPath + '/' + newMap;
+   }
+   if (currentMap == "BL3"){
+      newPath = '/~baharad/CS/' + currentModel + '/' + newInitDateYYYY + '/' + newInitDateMM + '/' + newInitDateDD + '/' + newInitDateHH;
+      newMap  = 'bl_var_2_dom_1_lev_' + currentLevel + '_step_' + newStep + '.png';
+      document.ih_img.src = newPath + '/' + newMap;
+   }
+
+//var_4_dom_6_range_1_step_90.png
+   if (currentMap == "zoomSnow"){
+      newPath = '/~baharad/CS/' + newInitDateYYYY + '/' + newInitDateMM + '/' + newInitDateDD + '/' + newInitDateHH;
+      newMap  = 'var_3_dom_' + currentRegion + '_range_1_step_' + newStep + '.png';
+      document.ih_img.src = newPath + '/' + newMap;
+   }
+   if (currentMap == "zoomGraupel"){
+      newPath = '/~baharad/CS/' + newInitDateYYYY + '/' + newInitDateMM + '/' + newInitDateDD + '/' + newInitDateHH;
+      newMap  = 'var_4_dom_' + currentRegion + '_range_1_step_' + newStep + '.png';
+      document.ih_img.src = newPath + '/' + newMap;
+   }
+   if (currentMap == "zoomSnowDepth"){
+      newPath = '/~baharad/CS/' + newInitDateYYYY + '/' + newInitDateMM + '/' + newInitDateDD + '/' + newInitDateHH;
+      newMap  = 'var_6_dom_' + currentRegion + '_range_1_step_' + newStep + '.png';
+      document.ih_img.src = newPath + '/' + newMap;
+   }
+
+   if (currentMap.slice(0,3)=='ENS'){
+      newPath = '/~baharad/ENS/' + currentModel + '/' + newInitDateYYYY + '/' + newInitDateMM + '/' + newInitDateDD + '/' + newInitDateHH;
+      newMap  = ENSmaps[currentMap] + '_il_prob_' + currentThreshold + ENSunits[currentMap] + '_s' + newStep + '.1.png';
+      document.ih_img.src = newPath + '/' + newMap;
+   }
+
+   flagInitOver = true;
+   });
+   $('.init').mouseout((event)=>{
+      $('#img img').css("border","1px transparent solid");
+      updateImage();
+      flagInitOver = false;
+   });
+
+   // and now highlight the default chosen ones
+   $('#slp, #domain div[data-domain="ilplus"], #model div[data-model="ICON"]').addClass('theChosenOne');
+   $('#maps div[data-map="map19"]').addClass('disabled');
+   $('#maps div[data-map="map20"]').addClass('disabled');
+   // do not show legend for defaul map (slp)
+   $('#legendSrc, #arrowUp, #arrowDown').addClass('disappear');
+   $('#noUpscale, #upscale1, #upscale2').addClass('disappear')
+
+
+   // arrow keys
+   document.onkeydown = function(e) {
+      switch(e.which) {
+      case 49: //EC
+         $('#model div').removeClass('theChosenOne');
+         $('#model div[data-model="IFS"]').addClass('theChosenOne');
+         setModel('IFS');
+      break;
+      case 50: //COSMO
+         $('#model div').removeClass('theChosenOne');
+         $('#model div[data-model="COSMO"]').addClass('theChosenOne');
+         setModel('COSMO');
+      break;
+      case 51: //ICON
+         $('#model div').removeClass('theChosenOne');
+         $('#model div[data-model="ICON"]').addClass('theChosenOne');
+         setModel('ICON');
+      break;
+      case 39: // right
+         if(currentModel=='COSMO'){
+            nextDomain = {
+               'il'      :'ilplus',
+               'ilplus'  :'il',
+               'emed'    :'il',
+               'see'     :'il',
+               'balkans' :'il',
+            }[currentDomain];
+            } else {
+            nextDomain = {
+               'il'      :'ilplus',
+               'ilplus'  :'emed',
+               'emed'    :'see',
+               'see'     :'balkans',
+               'balkans' :'il',
+            }[currentDomain];
+         }
+         $('#domain div').removeClass('theChosenOne');
+         $('#domain div[data-domain="' + nextDomain + '"]').addClass('theChosenOne');
+         setDomains(nextDomain);
+      break;
+      case 37: // left
+         if(currentModel=='COSMO'){
+            nextDomain = {
+               'il'      :'ilplus',
+               'ilplus'  :'il',
+               'emed'    :'ilplus',
+               'see'     :'ilplus',
+               'balkans' :'ilplus',
+            }[currentDomain];
+         } else {
+            nextDomain = {
+               'balkans' :'see',
+               'see'     :'emed',
+               'emed'    :'ilplus',
+               'ilplus'  :'il',
+               'il'      :'balkans',
+         }[currentDomain];
+         }
+         $('#domain div').removeClass('theChosenOne');
+         $('#domain div[data-domain="' + nextDomain + '"]').addClass('theChosenOne');
+         setDomains(nextDomain);
+      break;
+      case 38: // up
+         if (currentMap=='slp'){
+            nextMap='BL';
+         } else {
+            nextMap = $('#maps .theChosenOne').prev().data('map');
+         }
+         if(!nextMap){ nextMap = 'BL'; }
+         setMaps(nextMap);
+         $('#maps div').removeClass('theChosenOne');
+         $('#maps div[data-map="' + nextMap + '"]').addClass('theChosenOne');
+      break;
+      case 40: // down
+         if (currentMap=='BL'){
+            nextMap='slp';
+         }else{
+            nextMap = $('#maps .theChosenOne').next().data('map');
+         }
+         if(!nextMap){ nextMap = 'slp'; }
+         setMaps(nextMap);
+         $('#maps div').removeClass('theChosenOne');
+         $('#maps div[data-map="' + nextMap + '"]').addClass('theChosenOne');
+      break;
+      default:
+         return; // exit this handler for other keys
+      }
+      e.preventDefault(); // prevent the default action (scroll / move caret)
+   };
+});
+</script>
+
+</head>
+<body>
+<table>
+   <tr>
+      <td id=model width=200 height=50>
+         <div class="modelClass" data-model="IFS">EC</div>
+         <div class="modelClass" data-model="COSMO">COSMO</div>
+         <div class="modelClass" data-model="ICON">ICON</div>
+      </td>    
+      <td id="domain"></td>
+   </tr>
+   <tr>
+      <td>
+         <div id="mapsContainer">
+            <div id="maps" >
+            </div>
+         </div>
+      </td>
+      <!--  <td id="img" width=1000> -->
+      <!--    <td id="leaflet-container"> -->
+      <td id="img">
+         <div id="mapid">
+         <!-- <img src="ICON/ICON_slp_ilplus_2021061900_2021061900_0.png" id="mainImg" name="ih_img" class="mainClass"> -->
+         </div>
+
+         <div class="init" data-init="0">former run:</div>
+         <div class="init" data-init="12">-12h</div>
+         <div class="init" data-init="24">-24h</div>
+         <div class="init" data-init="36">-36h</div>
+         <div class="init" data-init="48">-48h</div>
+         <div class="init" data-init="60">-60h</div>
+         <div id="slider"></div>
+         <div class="timeaxis1">
+            <img src="/~baharad/icons/backward.png" width=50 height=40 onClick="setStep(-100)">
+            <img src="/~baharad/icons/play.png"     width=50 height=40 onClick="playAnimation()">
+            <img src="/~baharad/icons/stop.png"     width=50 height=40 onClick="stopAnimation()">
+            <img src="/~baharad/icons/forward.png"  width=50 height=40 onClick="setStep(100)">
+         </div>
+         <div class="timeButtons">
+            <img id='time1' src="/~baharad/icons/minus24.png" width=45 height=45 onClick="setStep(-24)" name="timeButton1">
+            <img id='time2' src="/~baharad/icons/minus12.png" width=45 height=45 onClick="setStep(-12)" name="timeButton2">
+            <img id='time3' src="/~baharad/icons/minus1.png"  width=45 height=45 onClick="setStep(-1)"  name="timeButton3">
+            <img id='time4' src="/~baharad/icons/plus1.png"   width=45 height=45 onClick="setStep(1)"   name="timeButton4">
+            <img id='time5' src="/~baharad/icons/plus12.png"  width=45 height=45 onClick="setStep(12)"  name="timeButton5">
+            <img id='time6' src="/~baharad/icons/plus24.png"  width=45 height=45 onClick="setStep(24)"  name="timeButton6">
+         </div>
+      </td>
+      <td id="legend">
+         <img src="/~baharad/wx_legend.png"  id="legendSrc" name="legend_img" class="clouds" height=350 width=450>
+         <div class="arrows">
+            <img id="arrowUp"   src="/~baharad/icons/blank_arrow.png" name="arrUp" height=45 width=45 onClick="setUp(1)" >
+            <img id="arrowDown" src="/~baharad/icons/blank_arrow.png" name="arrDn" height=45 width=45 onClick="setUp(-1)">
+            <img id="upscale2"    src="/~baharad/icons/upscale2.png"  height=45 width=65 onclick="upscl2()">
+            <img id="upscale1"    src="/~baharad/icons/upscale.png"   height=45 width=65 onclick="upscl1()">
+            <img id="noUpscale"   src="/~baharad/icons/regular.png"   height=45 width=65 onclick="noUpscl()">
+         </div>
+      </td>
+   </tr>
+</table>
+</body>
+</html>
